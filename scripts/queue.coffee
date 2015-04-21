@@ -59,8 +59,7 @@ module.exports = (robot) ->
 
   robot.respond /(pop )?student( pop)?/i, (msg) ->
     return unless msg.match[1]? || msg.match[2]?
-    instructors = ["Jeff Konowitch", "Neel Patel", "Andrew Fritz", "Sean Jackson"]
-    if  msg.envelope.user.real_name in instructors
+    if  _.includes(robot.brain.data.instructors, msg.message.user.name)
       if _.isEmpty robot.brain.data.instructorQueue
         msg.send "Student queue is empty"
       else

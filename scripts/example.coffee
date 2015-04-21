@@ -8,12 +8,7 @@
 #
 #   These are from the scripting documentation: https://github.com/github/hubot/blob/master/docs/scripting.md
 
-_ = require 'underscore'
-
 module.exports = (robot) ->
-
-  robot.respond /iaminstructor/i, (msg) ->
-    msg.reply _.includes(robot.brain.data.instructors, msg.message.user.name)
 
   # robot.hear /badger/i, (msg) ->
   #   msg.send "Badgers? BADGERS? WE DON'T NEED NO STINKIN BADGERS"
