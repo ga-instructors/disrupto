@@ -1,8 +1,10 @@
+# Description:
+#   TODO 
+#
+
 fs = require 'fs'
 
 module.exports = (robot) ->
 
-	robot.respond /quote yo self/i, (msg) ->
-		buffer = fs.readFileSync "./lib/quotes.json"
-		quotesArr = JSON.parse buffer.toString()
-		msg.send msg.random quotesArr
+	robot.respond /quote me/i, (msg) ->
+		msg.send msg.random robot.brain.data.quotes

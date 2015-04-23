@@ -53,9 +53,9 @@ module.exports = (robot) ->
     if _.any(robot.brain.data.instructorQueue, (student) -> student.name == name)
       robot.brain.data.instructorQueue = _.filter robot.brain.data.instructorQueue, (student) ->
         student.name != name
-      msg.reply "ok, you're removed from the queue."
+      msg.reply "OK, you're removed from the queue."
     else
-      msg.reply "you weren't in the queue."
+      msg.reply "You weren't in the queue."
 
   robot.respond /(pop )?student( pop)?/i, (msg) ->
     return unless msg.match[1]? || msg.match[2]?
