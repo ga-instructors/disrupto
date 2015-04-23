@@ -41,4 +41,12 @@
   // "hubot-shipit",
   // "hubot-youtube"
 ]
+
+[
+  "hubot-redis-brain",      // (see https://github.com/hubot-scripts/hubot-redis-brain)
+  "hubot-heroku-keepalive", // (see https://github.com/hubot-scripts/hubot-heroku-keepalive)
+  "hubot-diagnostics",      // ping, adapter, echo, time
+  "hubot-cron",             // new job, list jobs, rm job,  tz job
+  "hubot-help"              // help, help <query>
+]
 ```
