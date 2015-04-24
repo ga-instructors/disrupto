@@ -2,3 +2,7 @@ node_modules
 .DS_Store*
 .hubot_history
 bin/localhubot
+*.rdb
+.hubot_history
+.editorconfig
+.env
