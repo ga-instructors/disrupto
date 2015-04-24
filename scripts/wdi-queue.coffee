@@ -128,9 +128,8 @@ module.exports = (robot) ->
     _.tap robot.brain.data.studentQueue.length, (length) ->
       msg.send "Current queue length is #{length} students."
 
-  robot.router.get "/queue/pops", (req, res) ->
-  #   # res.setHeader 'Content-Type', 'text/html'
-  #   # _.each robot.brain.data.studentQueuePops, (student) ->
-  #   #   res.write "#{student.name} queued for #{student.reason} at #{tfmt student.queuedAt} popped at #{tfmt student.poppedAt} by #{student.poppedBy || 'nobody'}<br/>"
-  #   # res.end()
+  robot.router.get "/queue/current", (req, res) ->
+    res.json robot.brain.data.studentQueue
+
+  robot.router.get "/queue/popped", (req, res) ->
     res.json robot.brain.data.poppedStudents
