@@ -36,6 +36,8 @@ moment = require "moment"
 formatTime = (time) -> moment(time).format 'MMM Do, h:mm:ss a'
 
 module.exports = (robot) ->
+
+  # SETUP ######################################################################
   robot.brain.data.studentQueue   ?= []
   robot.brain.data.poppedStudents ?= [] # store for past student issues
   
@@ -66,65 +68,68 @@ module.exports = (robot) ->
     instructors = robot.brain.data.instructors
     !(instructors && ! _.includes(instructors, name))
 
-  robot.respond /q(ueue)? me$/i, (msg) ->
-    msg.reply "usage: bot queue me for [reason]"
+  # USAGE SUPPORT ##############################################################
+  robot.respond /q(ueue)? me$/i, (res) ->
+    res.reply "usage: bot queue me for [reason]"
 
-  robot.respond /q(ueue)? me(.+)/i, (msg) ->
-    unless msg.match[2].match /^[ ]*for (.+)/i
-      msg.reply "usage: bot queue me for [reason]"
+  robot.respond /q(ueue)? me(.+)/i, (res) ->
+    unless res.match[2].match /^[ ]*for (.+)/i
+      res.reply "usage: bot queue me for [reason]"
 
-  robot.respond /q(ueue)? me for (.+)/i, (msg) ->
-    name   = msg.envelope.user.real_name
-    reason = msg.match[2]
+  # RESPONSES ##################################################################
+  robot.respond /q(ueue)? me for (.+)/i, (res) ->
+    name   = res.envelope.user.real_name
+    reason = res.match[2]
 
     if _.any(studentQueue, (student) -> student.name == name)
-      msg.send "#{name} is already queued"
+      res.send "#{name} is already queued"
     else
       queueStudent name, reason
-      msg.send stringifyQueue()
+      res.send stringifyQueue()
 
-  robot.respond /unq(ueue)? me/i, (msg) ->
-    name = msg.envelope.user.real_name
+  robot.respond /unq(ueue)? me/i, (res) ->
+    name = res.envelope.user.real_name
 
     if _.any(studentQueue, (student) -> student.name == name)
       studentQueue = _.filter studentQueue, (student) ->
         student.name != name
-      msg.reply "OK, you're removed from the queue."
+      res.reply "OK, you're removed from the queue."
     else
-      msg.reply "You weren't in the queue."
+      res.reply "You weren't in the queue."
 
-  robot.respond /// (student )?q(ueue)?$///i, (msg) ->
+  robot.respond /// (student )?q(ueue)?$///i, (res) ->
     if _.isEmpty studentQueue
-      msg.send "Student queue is empty"
+      res.send "Student queue is empty"
     else
-      msg.send stringifyQueue()
+      res.send stringifyQueue()
 
-  robot.respond /// pop(  student)?$///i, (msg) ->
-    unless authorized(msg.message.user.name)
-      msg.reply "Sorry, you do not have permission to do that!"
+  robot.respond /// pop(  student)?$///i, (res) ->
+    unless authorized(res.message.user.name)
+      res.reply "Sorry, you do not have permission to do that!"
       return
 
     if _.isEmpty studentQueue
-      msg.send "Student queue is empty."
+      res.send "Student queue is empty."
     else
-      student = popStudent(msg.envelope.user.real_name)
-      msg.reply "Help #{student.name} with #{student.reason}, " + 
+      student = popStudent(res.envelope.user.real_name)
+      res.reply "Help #{student.name} with #{student.reason}, " + 
         "queued at #{formatTime student.queuedAt}"      
 
-  robot.respond /empty q(ueue)?/i, (msg) ->
-    unless authorized(msg.message.user.name)
-      msg.reply "Sorry, you do not have permission to do that!"
+  robot.respond /empty q(ueue)?/i, (res) ->
+    unless authorized(res.message.user.name)
+      res.reply "Sorry, you do not have permission to do that!"
       return
 
     studentQueue.forEach ->
-      popStudent(msg.envelope.user.real_name, false)
+      popStudent(res.envelope.user.real_name, false)
 
-    msg.reply "Queue emptied!"
+    res.reply "Queue emptied!"
 
-  robot.respond /q(ueue)?[ .]len(gth)?/i, (msg) ->
+  robot.respond /q(ueue)?[ .]len(gth)?/i, (res) ->
     _.tap studentQueue.length, (length) ->
-      msg.send "Current queue length is #{length} students."
+      res.send "Current queue length is #{length} students."
 
+  # ROUTES #####################################################################
   robot.router.get "/queue/current", (req, res) ->
     res.json studentQueue
 
