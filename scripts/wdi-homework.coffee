@@ -8,7 +8,7 @@
 #   hubot check hw - Saves completion data to bot's database but does not NOT close pull requests. Use in conjunction with the 'close all pr' count command if pull requests need to be closed.
 #   hubot clear stats - Clears all completion stats saved in database. USE CAREFULLY.
 
-_       = require 'underscore'
+_       = require 'lodash-node'
 fs      = require 'fs'
 moment  = require 'moment-timezone'
 request = require 'request'

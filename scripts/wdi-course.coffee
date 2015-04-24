@@ -5,7 +5,7 @@
 #   hubot course set students - makes call to WDI app and writes students hash to 'lib/students.json'
 
 fs      = require 'fs'
-_       = require 'underscore'
+_       = require 'lodash-node'
 request = require 'request'
 
 module.exports = (robot) ->
