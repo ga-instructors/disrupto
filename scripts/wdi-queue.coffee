@@ -120,7 +120,7 @@ module.exports = (robot) ->
       return
 
     robot.brain.data.studentQueue.forEach ->
-      popStudent(false)
+      popStudent(msg.envelope.user.real_name, false)
 
     msg.reply "Queue emptied!"
 
