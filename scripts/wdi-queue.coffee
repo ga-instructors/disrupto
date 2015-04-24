@@ -1,96 +1,136 @@
 # Description:
-#   Allows Students to queue for help and for Instructors to pull students from the queue 
+#   Allows students to queue for help and for instructors and TAs to pull 
+#   students from the queue.
+#
+# Dependencies:
+#   "lodash-node": "^3.7.0"
+#   "moment": "^2.9.0"
+#   "moment-timezone": "^0.3.0"
+# 
+# Configuration:
+#   None
 #
 # Commands:
-#   hubot queue me for <what they need help for> - Queues student
-#   hubot student queue - Gives you the current queue
-#   hubot pop student -  Removes student from queue and assigns to Instructor who popped them.
+#   hubot queue me for <reason> - Adds you to the queue
+#   hubot unqueue me            - Removes you to the queue
+#   hubot (student) queue       - Replies the current state of the queue
+#   hubot queue len(gth)        - Replies with the length of the queue
+#   hubot pop (student)         - Removes the next student from queue [admin]
+#   hubot empty queue           - Empties the queue [admin]
+#
+# Notes:
+#    * The "queue" is stored in the bot's brain under:
+#      - `robot.brain.data.studentQueue`
+#      - `robot.brain.data.poppedStudents`
+#    * To restrict "popping" a student off the queue, ensure that there is a 
+#      list of authorized users stored in the brain in the array:
+#      - `robot.brain.data.instructors`
+#
 
+# TODO: Add a dependency for cron, and set the queue to empty at 4am every day...
+# TODO: strengthen the regexes, especially `q` and `pop`; build in hubot name catcher
 
-util   = require 'util'
-_      = require 'underscore'
-moment = require 'moment'
+_      = require "lodash-node"
+moment = require "moment"
+
 tfmt   = (time) -> moment(time).format 'MMM Do, h:mm:ss a'
 
 module.exports = (robot) ->
-  robot.brain.data.instructorQueue ?= []
-  robot.brain.data.instructorQueuePops ?= []
+  robot.brain.data.studentQueue   ?= []
+  robot.brain.data.poppedStudents ?= [] # store for past student issues
+  
+  studentQueue   = robot.brain.data.studentQueue
+  poppedStudents = robot.brain.data.poppedStudents
 
   queueStudent = (name, reason) ->
-    robot.brain.data.instructorQueue.push
-      name: name
+    studentQueue.push
+      name:     name
       queuedAt: new Date()
-      reason: reason
+      reason:   reason
+
+  popStudent = (name, popped = true) ->
+    student = studentQueue.shift()
+    student.poppedAt = new Date()
+    student.poppedBy = name
+    student.handled  = popped
+    poppedStudents.push student
+    student
 
   stringifyQueue = ->
-    _.reduce robot.brain.data.instructorQueue, (reply, student) ->
-      reply += "\n"
-      reply += "#{student.name} at #{tfmt student.queuedAt} for #{student.reason}"
-      reply
-    , ""
+    str = _.reduce studentQueue, (reply, student) ->
+        "\n#{student.name} at #{tfmt student.queuedAt} for #{student.reason}"
+      , ""
+    "Current queue is: #{str}"
 
-  popStudent = ->
-    robot.brain.data.instructorQueue.shift()
+  authorized = (name) ->
+    instructors = robot.brain.data.instructors
+    !(instructors && ! _.includes(instructors, name))
 
   robot.respond /q(ueue)? me$/i, (msg) ->
     msg.reply "usage: bot queue me for [reason]"
 
   robot.respond /q(ueue)? me(.+)/i, (msg) ->
-    unless msg.match[2].match /^[ ]*for/i
+    unless msg.match[2].match /^[ ]*for (.+)/i
       msg.reply "usage: bot queue me for [reason]"
 
   robot.respond /q(ueue)? me for (.+)/i, (msg) ->
-    name = msg.envelope.user.real_name
+    name   = msg.envelope.user.real_name
     reason = msg.match[2]
-    if _.any(robot.brain.data.instructorQueue, (student) -> student.name == name)
+
+    if _.any(robot.brain.data.studentQueue, (student) -> student.name == name)
       msg.send "#{name} is already queued"
     else
       queueStudent name, reason
-      msg.send "Current queue is: #{stringifyQueue()}"
+      msg.send stringifyQueue()
 
   robot.respond /unq(ueue)? me/i, (msg) ->
     name = msg.envelope.user.real_name
-    if _.any(robot.brain.data.instructorQueue, (student) -> student.name == name)
-      robot.brain.data.instructorQueue = _.filter robot.brain.data.instructorQueue, (student) ->
-        student.name != name
+
+    if _.any(robot.brain.data.studentQueue, (student) -> student.name == name)
+      robot.brain.data.studentQueue = _.filter(
+        robot.brain.data.studentQueue, 
+        (student) ->
+          student.name != name
+      )
       msg.reply "OK, you're removed from the queue."
     else
       msg.reply "You weren't in the queue."
 
-  robot.respond /(pop )?student( pop)?/i, (msg) ->
-    return unless msg.match[1]? || msg.match[2]?
-    if  _.includes(robot.brain.data.instructors, msg.message.user.name)
-      if _.isEmpty robot.brain.data.instructorQueue
-        msg.send "Student queue is empty"
-      else
-        student = popStudent()
-        student.poppedAt = new Date()
-        student.poppedBy = msg.envelope.user.real_name
-        robot.brain.data.instructorQueuePops.push student
-        msg.reply "Go help #{student.name} with #{student.reason}, queued at #{tfmt student.queuedAt}"
-    else 
-      msg.reply "Sorry, you do not have permission to do that!"
-
-  robot.respond /student q(ueue)?/i, (msg) ->
-    if _.isEmpty robot.brain.data.instructorQueue
+  robot.respond /// (student )?q(ueue)?$///i, (msg) ->
+    if _.isEmpty robot.brain.data.studentQueue
       msg.send "Student queue is empty"
     else
       msg.send stringifyQueue()
 
-  robot.respond /empty q(ueue)?/i, (msg) ->
-    instructors = ["Jeff Konowitch", "Neel Patel", "Andrew Fritz", "Sean Jackson"]
-    if instructors.indexOf(msg.envelope.user.real_name) != -1
-      robot.brain.data.instructorQueue = []
-      msg.reply "cleared the queue"
-    else
-      msg.reply "Sorry, you aren't allowed to do that"
+  robot.respond /// pop(  student)?$///i, (msg) ->
+    unless authorized(msg.message.user.name)
+      msg.reply "Sorry, you do not have permission to do that!"
+      return
 
-  robot.respond /q(ueue)?[ .]length/i, (msg) ->
-    _.tap robot.brain.data.instructorQueue.length, (length) ->
+    if _.isEmpty robot.brain.data.studentQueue
+      msg.send "Student queue is empty."
+    else
+      student = popStudent(msg.envelope.user.real_name)
+      msg.reply "Help #{student.name} with #{student.reason}, " + 
+        "queued at #{tfmt student.queuedAt}"      
+
+  robot.respond /empty q(ueue)?/i, (msg) ->
+    unless authorized(msg.message.user.name)
+      msg.reply "Sorry, you do not have permission to do that!"
+      return
+
+    robot.brain.data.studentQueue.forEach ->
+      popStudent(false)
+
+    msg.reply "Queue emptied!"
+
+  robot.respond /q(ueue)?[ .]len(gth)?/i, (msg) ->
+    _.tap robot.brain.data.studentQueue.length, (length) ->
       msg.send "Current queue length is #{length} students."
 
   robot.router.get "/queue/pops", (req, res) ->
-    res.setHeader 'Content-Type', 'text/html'
-    _.each robot.brain.data.instructorQueuePops, (student) ->
-      res.write "#{student.name} queued for #{student.reason} at #{tfmt student.queuedAt} popped at #{tfmt student.poppedAt} by #{student.poppedBy || 'nobody'}<br/>"
-    res.end()
+  #   # res.setHeader 'Content-Type', 'text/html'
+  #   # _.each robot.brain.data.studentQueuePops, (student) ->
+  #   #   res.write "#{student.name} queued for #{student.reason} at #{tfmt student.queuedAt} popped at #{tfmt student.poppedAt} by #{student.poppedBy || 'nobody'}<br/>"
+  #   # res.end()
+    res.json robot.brain.data.poppedStudents
