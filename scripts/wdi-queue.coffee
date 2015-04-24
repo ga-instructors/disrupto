@@ -33,7 +33,7 @@
 _      = require "lodash-node"
 moment = require "moment"
 
-tfmt   = (time) -> moment(time).format 'MMM Do, h:mm:ss a'
+formatTime = (time) -> moment(time).format 'MMM Do, h:mm:ss a'
 
 module.exports = (robot) ->
   robot.brain.data.studentQueue   ?= []
@@ -57,8 +57,8 @@ module.exports = (robot) ->
     student
 
   stringifyQueue = ->
-    str = _.reduce studentQueue, (reply, student) ->
-        "\n#{student.name} at #{tfmt student.queuedAt} for #{student.reason}"
+    str = _.reduce studentQueue, (reply, stud) ->
+        "\n#{stud.name} at #{formatTime stud.queuedAt} for #{stud.reason}"
       , ""
     "Current queue is: #{str}"
 
@@ -77,7 +77,7 @@ module.exports = (robot) ->
     name   = msg.envelope.user.real_name
     reason = msg.match[2]
 
-    if _.any(robot.brain.data.studentQueue, (student) -> student.name == name)
+    if _.any(studentQueue, (student) -> student.name == name)
       msg.send "#{name} is already queued"
     else
       queueStudent name, reason
@@ -86,18 +86,15 @@ module.exports = (robot) ->
   robot.respond /unq(ueue)? me/i, (msg) ->
     name = msg.envelope.user.real_name
 
-    if _.any(robot.brain.data.studentQueue, (student) -> student.name == name)
-      robot.brain.data.studentQueue = _.filter(
-        robot.brain.data.studentQueue, 
-        (student) ->
-          student.name != name
-      )
+    if _.any(studentQueue, (student) -> student.name == name)
+      studentQueue = _.filter studentQueue, (student) ->
+        student.name != name
       msg.reply "OK, you're removed from the queue."
     else
       msg.reply "You weren't in the queue."
 
   robot.respond /// (student )?q(ueue)?$///i, (msg) ->
-    if _.isEmpty robot.brain.data.studentQueue
+    if _.isEmpty studentQueue
       msg.send "Student queue is empty"
     else
       msg.send stringifyQueue()
@@ -107,29 +104,29 @@ module.exports = (robot) ->
       msg.reply "Sorry, you do not have permission to do that!"
       return
 
-    if _.isEmpty robot.brain.data.studentQueue
+    if _.isEmpty studentQueue
       msg.send "Student queue is empty."
     else
       student = popStudent(msg.envelope.user.real_name)
       msg.reply "Help #{student.name} with #{student.reason}, " + 
-        "queued at #{tfmt student.queuedAt}"      
+        "queued at #{formatTime student.queuedAt}"      
 
   robot.respond /empty q(ueue)?/i, (msg) ->
     unless authorized(msg.message.user.name)
       msg.reply "Sorry, you do not have permission to do that!"
       return
 
-    robot.brain.data.studentQueue.forEach ->
+    studentQueue.forEach ->
       popStudent(msg.envelope.user.real_name, false)
 
     msg.reply "Queue emptied!"
 
   robot.respond /q(ueue)?[ .]len(gth)?/i, (msg) ->
-    _.tap robot.brain.data.studentQueue.length, (length) ->
+    _.tap studentQueue.length, (length) ->
       msg.send "Current queue length is #{length} students."
 
   robot.router.get "/queue/current", (req, res) ->
-    res.json robot.brain.data.studentQueue
+    res.json studentQueue
 
   robot.router.get "/queue/popped", (req, res) ->
-    res.json robot.brain.data.poppedStudents
+    res.json poppedStudents
