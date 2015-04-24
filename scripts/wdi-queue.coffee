@@ -12,11 +12,11 @@
 #
 # Commands:
 #   hubot queue me for <reason> - Adds you to the queue
-#   hubot unqueue me            - Removes you to the queue
-#   hubot (student) queue       - Replies the current state of the queue
-#   hubot queue len(gth)        - Replies with the length of the queue
-#   hubot pop (student)         - Removes the next student from queue [admin]
-#   hubot empty queue           - Empties the queue [admin]
+#   hubot unqueue me - Removes you to the queue
+#   hubot (student) queue - Replies the current state of the queue
+#   hubot queue len(gth) - Replies with the length of the queue
+#   hubot pop (student) - Removes the next student from queue [admin]
+#   hubot empty queue - Empties the queue [admin]
 #
 # Notes:
 #    * The "queue" is stored in the bot's brain under:
