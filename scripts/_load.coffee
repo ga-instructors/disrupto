@@ -21,5 +21,6 @@ module.exports = (robot) ->
   robot.brain.data["students"]    = getLibrary("students")
 
   robot.router.get "/", (req, res) ->
-    res.setHeader 'Content-Type', 'text/html'
-    res.sendFile('./lib/index.html');
+    res.setHeader "Content-Type", "text/html"
+    res.write fs.readFileSync("./lib/index.html").toString()
+    res.end()
